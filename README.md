@@ -13,6 +13,7 @@ Download the code:
     git clone git@github.com:bauerem/flask-upload-download.git
 
 Start the API:
+
         cd flask-upload-download/api
         python3 -m venv venv
         . venv/bin/activate
@@ -20,6 +21,7 @@ Start the API:
         flask run
 
 Start the client:
+
         cd flask-upload-download
         npm i
         npm run start
