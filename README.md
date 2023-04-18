@@ -10,18 +10,19 @@ There are also options for containerizing the app(s) with Docker.
 ## Setup
 ### Simple setup
 Download the code:
-    git clone git@github.com:bauerem/flask-upload-download.git
+
+    git clone git@github.com:bauerem/uploader-downloader-template.git
 
 Start the API:
 
-        cd flask-upload-download/api
-        python3 -m venv venv
-        . venv/bin/activate
-        pip install -r requirements.txt
-        flask run
+    cd flask-upload-download/api
+    python3 -m venv venv
+    . venv/bin/activate
+    pip install -r requirements.txt
+    flask run
 
 Start the client:
 
-        cd flask-upload-download
-        npm i
-        npm run start
+    cd flask-upload-download
+    npm i
+    npm run start
