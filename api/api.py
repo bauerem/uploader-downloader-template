@@ -1,10 +1,14 @@
+from multiprocessing import Process
 import time
-from flask import Flask, Response, send_file, render_template, request, make_response
+from flask import Flask, Response, send_file, request, make_response
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
 from random import random
+from datetime import datetime
 
 app = Flask(__name__, static_folder="../build", static_url_path='/')
+CORS(app)
 app.config['SECRET_KEY'] = 'supersecretkey'
 app.config['UPLOAD_FOLDER'] = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), 'static/files'
@@ -23,8 +27,17 @@ def index():
 def get_current_time():
     return {'time': time.time()}
 
+def do_something(a):
+    for i in range(100_000):
+        a = i + 1
+
 @app.route('/api/upload', methods=['POST'])
 def upload():
+
+    p = Process(target=do_something, args=[1])
+    p.start()
+    print(p.is_alive())
+
     file = request.files['inputFile']
     extension = file.filename.split('.')[-1]
     token = int(random()*10**16)
@@ -39,9 +52,9 @@ def upload():
     else:
         return {"fail": "fail! messed up file(name)"}
     
-
     # Make the response body
-    response = {"status": "successfully uplaoded file to the server.", "filename": file.filename}
+    print(p.is_alive())
+    response = {"status": f"successfully uploaded file to the server. process status: {p.is_alive()}", "filename": file.filename}
     response = make_response(response)
     ## response = render_template('index.html')
 
@@ -50,9 +63,21 @@ def upload():
     response.set_cookie('token', ss_filename)
     return response
 
+@app.route('/api/stream')
+def stream():
+    token = request.args.get('token')
+    def get_data():
+        while True:
+            time.sleep(1)
+            print(token)
+            yield f'data: {datetime.now()} \n\n'
+
+    return Response(get_data(), mimetype='text/event-stream')
+
 @app.route('/api/download')
 def download_file():
     ss_filename = request.cookies.get('token')
+
     path = os.path.join(
         app.config['UPLOAD_FOLDER'],
         ss_filename
@@ -62,6 +87,6 @@ def download_file():
         return make_response("File not found", 404)
     
     response = make_response(send_file(path, as_attachment=True))
-    #response.headers["Content-Disposition"] = "attachment; filename={}".format(request.cookies.get('filename'))
-    response.headers.set('Content-Disposition', 'attachment', filename=ss_filename)
+    response.headers["Content-Disposition"] = "attachment; filename={}".format(ss_filename)
+    #response.headers.set('Content-Disposition', 'attachment', filename=ss_filename)
     return response
