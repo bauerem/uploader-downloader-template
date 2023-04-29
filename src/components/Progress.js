@@ -1,17 +1,20 @@
+import { Spinner } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 
+const Progress = ({setStatus}) => {
 
-const Progress = () => {
-
-    const [data, setData] = useState('Processing...');
+    const [data, setData] = useState(false);
 
     useEffect(() => {
         const token = document.cookie.match(/token=([^;]+)/)[1]; // extract token value from cookie
         const sse = new EventSource(`http://localhost:5000/api/stream?token=${token}`);
 
         function handleStream(e) {
-            console.log(e);
-            setData(e);
+            if (e === 'done') {
+                setData(true);
+                sse.close();
+                setStatus(2); // status numbers defined in parent component
+            }
         }
 
         sse.onmessage = e => (handleStream(e.data));
@@ -21,14 +24,13 @@ const Progress = () => {
             // will stall and stop stream
             sse.close();
         }
+    }, [setStatus]);
 
-    }, []);
+    const done = <p>done</p>;
 
     return (
         <div>
-            <p>
-                The time is : {data}
-            </p>
+                {data ?  done: <Spinner size='xl' />}
         </div>
     )
 

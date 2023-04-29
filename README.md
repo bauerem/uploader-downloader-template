@@ -5,7 +5,7 @@ This is a Flask and React webapp with which users can upload images to a server 
 There are also options for containerizing the app(s) with Docker.
 
 ## Screenshot
-<img title="a title" alt="Alt text" src="screenshot.png">
+<img title="a title" alt="Alt text" src="animation.gif">
 
 ## Setup
 ### Simple setup
@@ -16,6 +16,7 @@ Download the code:
 Start the API:
 
     cd flask-upload-download/api
+    mkdir static/files
     python3 -m venv venv
     . venv/bin/activate
     pip install -r requirements.txt
