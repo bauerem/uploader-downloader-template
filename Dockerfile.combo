@@ -15,7 +15,7 @@ FROM python:3.9
 WORKDIR /app
 COPY --from=build-step /app/build ./build
 
-RUN mkdir ./api
+RUN mkdir -p ./api/static/files
 COPY api/requirements.txt ./api 
 COPY api/api.py ./api
 COPY api/.flaskenv ./api
