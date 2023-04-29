@@ -4,6 +4,7 @@ FROM python:3.9
 WORKDIR /app
 
 COPY api/requirements.txt api/api.py api/.flaskenv ./
+RUN mkdir -p ./static/files
 RUN pip install -r ./requirements.txt
 ENV FLASK_ENV production
 
