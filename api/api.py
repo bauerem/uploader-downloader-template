@@ -83,7 +83,7 @@ def upload():
 
     # Set Cookies, so that user can later download
     #response.set_cookie('filename', file.filename)
-    response.set_cookie( 'token', ss_filename.split('.')[0] )
+    response.set_cookie( 'token', ss_filename.split('.')[0], path='/')
     return response
 
 @app.route('/api/stream')
@@ -120,5 +120,5 @@ def download_file():
     
     filename = request.cookies.get('token') + '.png'
     response = make_response(send_file(path, as_attachment=True, mimetype='image/png'))
-    response.set_cookie('filename', 'image.png')
+    response.set_cookie('filename', 'image.png', path='/')
     return response
