@@ -1,27 +1,40 @@
-import { getCookiesMap } from "../helpers/getCookiesMap";
+import { api } from "../helpers/api";
 
-const Downloader = function ({setStatus}) {
+const Downloader = function ({ setStatus }) {
 
-    const onClick = async (ev) => {
-        ev.preventDefault();
-        const response = await fetch('/api/download');
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(new Blob([blob]));
-        const link = document.createElement('a');
-
-        const cookies = getCookiesMap(document.cookie);
-        const local_filename = cookies['filename'];
-        link.href = url;
-        link.setAttribute('download', local_filename);
-        document.body.appendChild(link);
-        link.click();
-        link.parentNode.removeChild(link);
-        setStatus(3);
+  const onClick = async (ev) => {
+    ev.preventDefault();
+    const data = {
+      "token": localStorage.getItem("token")
     }
 
-    return (
-      <button onClick={onClick}>Download</button>
-    )
+    const response = await fetch(api + "/api/download", {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data)
+    });
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(new Blob([blob]));
+    console.log(url);
+    const link = document.createElement('a');
+
+    //const cookies = getCookiesMap(document.cookie);
+    //const local_filename = cookies['filename'];
+    const local_filename = localStorage.getItem("local_filename")
+    link.href = url;
+    link.setAttribute('download', local_filename);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode.removeChild(link);
+    setStatus(3);
   }
 
-export default  Downloader;
+  return (
+    <button onClick={onClick}>Download</button>
+  )
+}
+
+export default Downloader;

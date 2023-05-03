@@ -1,13 +1,15 @@
 import { Spinner } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
+import { api } from "../helpers/api";
 
-const Progress = ({setStatus}) => {
+const Progress = ({ setStatus }) => {
 
     const [data, setData] = useState(false);
 
     useEffect(() => {
-        const token = document.cookie.match(/token=([^;]+)/)[1]; // extract token value from cookie
-        const sse = new EventSource(`http://localhost:5000/api/stream?token=${token}`);
+        //const token = document.cookie.match(/token=([^;]+)/)[1]; // extract token value from cookie
+        const token = localStorage.getItem("token")
+        const sse = new EventSource(`${api}/api/stream?token=${token}`);
 
         function handleStream(e) {
             if (e === 'done') {
@@ -30,11 +32,11 @@ const Progress = ({setStatus}) => {
 
     return (
         <div>
-                {data ?  done: <Spinner size='xl' />}
+            {data ? done : <Spinner size='xl' />}
         </div>
     )
 
 }
 
 
-export default  Progress;
+export default Progress;
