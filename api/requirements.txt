@@ -3,3 +3,4 @@ flask-cors
 python-dotenv
 gunicorn
 pillow
+python-magic

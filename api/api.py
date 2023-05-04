@@ -6,7 +6,7 @@ import os
 from random import random
 from datetime import datetime
 from PIL import Image
-
+import magic
 
 app = Flask(__name__, static_folder="../build", static_url_path="/")
 CORS(app)
@@ -16,15 +16,57 @@ app.config["UPLOAD_FOLDER"] = os.path.join(
 )
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
+OUTPUT_EXTENSION = ".png"
 
-def is_allowed_filetype(filename):
-    allowed_types = {"pdf", "png", "jpg", "jpeg", "gif"}
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in allowed_types
+
+def is_allowed_filetype():
+    # Define allowed mime types
+    allowed_mime_types = ["image/png", "image/jpeg", "text/plain", "application/pdf"]
+
+    # Read the first 2048 bytes from the uploaded file buffer. We don't save it to the
+    # filesystem yet because we don't know wtf it could be.
+    mime = magic.Magic(mime=True)
+    file = request.files["inputFile"]
+    first_2kb = file.read(2048)
+    detected_mimetype = mime.from_buffer(first_2kb)
+
+    # Reset stream to start of file
+    file.stream.seek(0)
+
+    print("\n\n Uploaded mimetype: ", detected_mimetype, "\n\n")
+
+    # Check mimetype
+    if detected_mimetype in allowed_mime_types:
+        return True
+
+    return False
+
+    # return "." in filename and filename.rsplit(".", 1)[1].lower() in allowed_types
+
+
+def get_filename(token, suffix=None):
+    # Get names of all files in the upload folder
+    filenames = os.listdir(app.config["UPLOAD_FOLDER"])
+
+    # Look for the correct filename that contains the token.
+    # Note: "filename" is always unique since we check for uniqueness when we
+    # store it.
+    filename = list(filter(lambda filename: token in filename, filenames))[0]
+
+    extension = filename.split(".")[-1]
+
+    # Get the currently processed file
+    if suffix is not None:
+        final_filename = token + suffix + "." + extension
+    else:
+        final_filename = token + "." + extension
+
+    return final_filename
 
 
 @app.route("/")
 def index():
-    return app.send_static_file("index.html")
+    return "The API works."
 
 
 @app.route("/api/time", methods=["GET"])
@@ -40,34 +82,49 @@ def something(input):
 
 
 def do_something(init_filename):
-    load_path = os.path.join(app.config["UPLOAD_FOLDER"], init_filename)
-    input = Image.open(load_path)
+    # Load file
+    filepath = os.path.join(app.config["UPLOAD_FOLDER"], init_filename)
+    input = Image.open(filepath)
 
-    output = something(input)
+    # Here we'd change the file somehow. We just wait 3 seconds.
+    time.sleep(3)
 
-    # Update file
-
-    out_filename = init_filename.split(".")[0] + "_.png"
+    # Update file: We set the input as the output (because we didn't do
+    # anything) and save it undera new name.
+    output = input
+    extension = input.filename.split(".")[-1]
+    out_filename = init_filename.split(".")[0] + "_." + extension
     save_path = os.path.join(app.config["UPLOAD_FOLDER"], out_filename)
     output.save(save_path)
 
 
 @app.route("/api/upload", methods=["POST"])
 def upload():
+    # Check if the file contained in the request's body is allowed.
+    if not is_allowed_filetype():
+        return "Unsupported filetype", 415
+
+    # Generate token
     file = request.files["inputFile"]
     extension = file.filename.split(".")[-1]
     token = int(random() * 10**16)
 
-    # Define Server Side Filename
+    # Define Server side filename
     ss_filename = str(token) + "." + extension
 
+    filepath = os.path.join(app.config["UPLOAD_FOLDER"], ss_filename)
+
+    # Store file to filesystem
+    if os.path.isfile(filepath):
+        # TODO: Maybe just generate a new token?
+        return "File with this token already exists.", 409
+
+    file.save(filepath)
+
+    # Start service that does something with file.
+    print(os.path.join(app.config["UPLOAD_FOLDER"], ss_filename))
     p = Process(target=do_something, args=[ss_filename])
     p.start()
-
-    if file and is_allowed_filetype(ss_filename):
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], ss_filename))
-    else:
-        return {"fail": "fail! messed up file(name)"}
 
     # Make the response body
     response = {
@@ -75,11 +132,6 @@ def upload():
         "filename": file.filename,
         "token": ss_filename.split(".")[0],
     }
-    response = make_response(response)
-
-    # Set Cookies, so that user can later download
-    # response.set_cookie('filename', file.filename)
-    # response.set_cookie( 'token', ss_filename.split('.')[0], path='/')
 
     return response
 
@@ -87,9 +139,12 @@ def upload():
 @app.route("/api/stream")
 def stream():
     token = request.args.get("token")
-    final_filename = token + "_.png"
+
+    final_filename = get_filename(token, suffix="_")
+
     final_path = os.path.join(app.config["UPLOAD_FOLDER"], final_filename)
 
+    # Wait until the file is processed
     def get_data():
         while True:
             time.sleep(1)
@@ -103,14 +158,18 @@ def stream():
 
 @app.route("/api/download", methods=["POST"])
 def download_file():
+    # Get token
     data = request.json
-    ss_filename = data["token"] + "_.png"
+    token = data["token"]
 
-    path = os.path.join(app.config["UPLOAD_FOLDER"], ss_filename)
+    # Get filename
+    ss_filename = get_filename(token, suffix="_")
 
-    if not os.path.isfile(path):
+    filepath = os.path.join(app.config["UPLOAD_FOLDER"], ss_filename)
+
+    # Check if file exists
+    if not os.path.isfile(filepath):
         return make_response("File not found", 404)
 
-    # filename = request.cookies.get("token") + ".png"
-    return send_file(path, as_attachment=True)
-    # response.set_cookie("filename", "image.png", path="/")
+    # Send file back to client
+    return send_file(filepath, as_attachment=True)
