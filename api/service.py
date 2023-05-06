@@ -73,9 +73,3 @@ class Service:
         # anything) and save it undera new name.
         output = input
         output.save(self.path_processed_file)
-
-    def something(input):
-        a = 0
-        for i in range(100_000_000):
-            a = i + 1
-        return input
