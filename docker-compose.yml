@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile.api
     image: react-flask-app-api
+    ports:
+      - "5000:5000"
   client:
     build:
       context: .
