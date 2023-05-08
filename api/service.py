@@ -43,7 +43,7 @@ class Service:
         ]
 
         self.path_input_file = os.path.join(
-            self.upload_folder, self.token + "." + self.output_extension
+            self.upload_folder, self.token + "." + self.input_extension
         )
         self.path_processed_file = os.path.join(
             self.upload_folder, self.token + self.suffix + "." + self.output_extension
